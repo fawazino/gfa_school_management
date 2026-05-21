@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Academic Sessions{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-calendar-alt me-2 text-primary"></i>Academic Sessions</h2>
+    <a href="{{ url_for('session_create') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Create Session
+    </a>
+</div>
+<div class="card">
+    <div class="card-header bg-primary text-white">All Sessions</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>ID</th><th>Name</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for sess in sessions %}
+                <tr>
+                    <td>{{ sess.id }}</td>
+                    <td><strong>{{ sess.name }}</strong></td>
+                    <td>{{ sess.start_date.strftime('%d/%m/%Y') if sess.start_date else 'N/A' }}</td>
+                    <td>{{ sess.end_date.strftime('%d/%m/%Y') if sess.end_date else 'N/A' }}</td>
+                    <td>{% if sess.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                    <td>
+                        {% if not sess.is_active %}
+                        <form method="POST" action="{{ url_for('session_activate', session_id=sess.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success">Activate</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No sessions found. <a href="{{ url_for('session_create') }}">Create one</a>.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

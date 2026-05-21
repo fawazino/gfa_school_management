@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}School Fees - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-money-bill-wave me-2 text-primary"></i>School Fees</h2>
+    <div>
+        <a href="{{ url_for('fee_setup') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Setup Fee
+        </a>
+        <a href="{{ url_for('fee_payment') }}" class="btn btn-success ms-2">
+            <i class="fas fa-credit-card me-2"></i>Record Payment
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-list me-2"></i>Fee Structures
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Department</th>
+                        <th>Session</th>
+                        <th>Term</th>
+                        <th>Fee Type</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Mandatory</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fee in fees %}
+                    <tr>
+                        <td>{{ fee.class_obj.name if fee.class else 'N/A' }}</td>
+                        <td>{{ fee.department.name if fee.department else 'All' }}</td>
+                        <td>{{ fee.session.name if fee.session else 'N/A' }}</td>
+                        <td>{{ fee.term.name if fee.term else 'N/A' }}</td>
+                        <td><span class="badge bg-info">{{ fee.fee_type }}</span></td>
+                        <td><strong>₦{{ "{:,.2f}".format(fee.amount|float) }}</strong></td>
+                        <td>{{ fee.due_date.strftime('%d/%m/%Y') if fee.due_date else 'N/A' }}</td>
+                        <td>
+                            {% if fee.is_mandatory %}
+                            <span class="badge bg-success">Yes</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No fee structures found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

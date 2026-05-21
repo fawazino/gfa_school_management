@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}View Results - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-bar me-2 text-primary"></i>View Results</h2>
+    <a href="{{ url_for('result_entry') }}" class="btn btn-primary">
+        <i class="fas fa-edit me-2"></i>Enter Results
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-filter me-2"></i>Filter Results
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row">
+            <div class="col-md-3">
+                <label class="form-label">Student</label>
+                <select name="student_id" class="form-select">
+                    <option value="">All Students</option>
+                    {% for student in students %}
+                    <option value="{{ student.id }}" {% if request.args.get('student_id')|string == student.id|string %}selected{% endif %}>{{ student.first_name }} {{ student.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Class</label>
+                <select name="class_id" class="form-select">
+                    <option value="">All Classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {% if request.args.get('class_id')|string == class.id|string %}selected{% endif %}>{{ class.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Session</label>
+                <select name="session_id" class="form-select">
+                    <option value="">All Sessions</option>
+                    {% for sess in sessions %}
+                    <option value="{{ sess.id }}" {% if request.args.get('session_id')|string == sess.id|string %}selected{% endif %}>{{ sess.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Term</label>
+                <select name="term_id" class="form-select">
+                    <option value="">All Terms</option>
+                    {% for term in terms %}
+                    <option value="{{ term.id }}" {% if request.args.get('term_id')|string == term.id|string %}selected{% endif %}>{{ term.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>Results</span>
+        <div>
+            <form method="POST" action="{{ url_for('calculate_positions') }}" class="d-inline">
+                <input type="hidden" name="class_id" value="{{ request.args.get('class_id') }}">
+                <input type="hidden" name="session_id" value="{{ request.args.get('session_id') }}">
+                <input type="hidden" name="term_id" value="{{ request.args.get('term_id') }}">
+                <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="fas fa-calculator me-2"></i>Calculate Positions
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Subject</th>
+                        <th>C.A</th>
+                        <th>Exam</th>
+                        <th>Total</th>
+                        <th>Grade</th>
+                        <th>Position</th>
+                        <th>Remark</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.student.first_name }} {{ result.student.last_name }}</td>
+                        <td>{{ result.subject.name }}</td>
+                        <td>{{ result.ca_score or 0 }}</td>
+                        <td>{{ result.exam_score or 0 }}</td>
+                        <td><strong>{{ result.total_score or 0 }}</strong></td>
+                        <td><span class="badge-grade grade-{{ result.grade }}">{{ result.grade or 'N/A' }}</span></td>
+                        <td>{{ result.subject_position or 'N/A' }}</td>
+                        <td>{{ result.remark or 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('report_card', student_id=result.student_id, session_id=result.session_id, term_id=result.term_id) }}" class="btn btn-sm btn-info" title="View Report Card">
+                                <i class="fas fa-file-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="9" class="text-center text-muted py-4">No results found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

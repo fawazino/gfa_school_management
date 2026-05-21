@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Affective Assessment - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-heart me-2 text-primary"></i>Affective Assessment</h2>
+    <a href="{{ url_for('psychomotor_assessment') }}" class="btn btn-info">
+        <i class="fas fa-running me-2"></i>Psychomotor Assessment
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-smile me-2"></i>Rate Student Behavior
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('affective_assessment') }}">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Student <span class="text-danger">*</span></label>
+                    <select name="student_id" class="form-select" required>
+                        <option value="">Select Student</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Session <span class="text-danger">*</span></label>
+                    <select name="session_id" class="form-select" required>
+                        <option value="">Select Session</option>
+                        {% for sess in sessions %}
+                        <option value="{{ sess.id }}">{{ sess.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Term <span class="text-danger">*</span></label>
+                    <select name="term_id" class="form-select" required>
+                        <option value="">Select Term</option>
+                        {% for term in terms %}
+                        <option value="{{ term.id }}">{{ term.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Rating Scale:</strong> 5 = Excellent, 4 = Good, 3 = Fair, 2 = Poor, 1 = Very Poor
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Punctuality</label>
+                    <select name="punctuality" class="form-select">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3" selected>3 - Fair</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Very Poor</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Neatness</label>
+                    <select name="neatness" class="form-select">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3" selected>3 - Fair</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Very Poor</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Politeness</label>
+                    <select name="politeness" class="form-select">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3" selected>3 - Fair</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Very Poor</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Attitude to School Work</label>
+                    <select name="attitude_to_work" class="form-select">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3" selected>3 - Fair</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Very Poor</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Attentiveness</label>
+                    <select name="attentiveness" class="form-select">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3" selected>3 - Fair</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Very Poor</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Speaking/Handwriting</label>
+                    <select name="speaking_handwriting" class="form-select">
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3" selected>3 - Fair</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Very Poor</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Save Assessment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

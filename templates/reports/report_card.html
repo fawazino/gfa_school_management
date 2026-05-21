@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Report Card - {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block content %}
+<div class="no-print mb-3">
+    <a href="{{ url_for('results_view') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back
+    </a>
+    <button onclick="window.print()" class="btn btn-primary ms-2">
+        <i class="fas fa-print me-2"></i>Print Report Card
+    </button>
+    <a href="{{ url_for('report_card_pdf', student_id=student.id, session_id=session.id, term_id=term.id) }}" class="btn btn-success ms-2">
+        <i class="fas fa-download me-2"></i>Download PDF
+    </a>
+</div>
+
+<div class="report-card">
+    <!-- Report Header -->
+    <div class="report-header">
+        <h2>Secondary School</h2>
+        <p class="text-muted mb-0">JSS & SSS Academic Report</p>
+        <p class="text-muted">{{ session.name }} - {{ term.name }}</p>
+    </div>
+
+    <!-- Student Information -->
+    <div class="student-info-grid">
+        <div class="info-item">
+            <span class="info-label">Name:</span>
+            <span>{{ student.first_name }} {{ student.last_name }} {{ student.other_names or '' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Admission No:</span>
+            <span>{{ student.admission_number }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Class:</span>
+            <span>{{ student.student_class.name if student.student_class else 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Stream:</span>
+            <span>{{ student.department.name if student.department else 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Sex:</span>
+            <span>{{ student.sex or 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Term/Session:</span>
+            <span>{{ term.name }} / {{ session.name }}</span>
+        </div>
+    </div>
+
+    <!-- Attendance -->
+    {% if attendance %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-primary"><i class="fas fa-calendar-check me-2"></i>Attendance</h5>
+            <div class="row">
+                <div class="col-md-3"><strong>No of Times School Opened:</strong> {{ attendance.school_opened }}</div>
+                <div class="col-md-3"><strong>No of Times Present:</strong> {{ attendance.times_present }}</div>
+                <div class="col-md-3"><strong>No of Times Absent:</strong> {{ attendance.times_absent }}</div>
+                <div class="col-md-3"><strong>No of Times Late:</strong> {{ attendance.times_late }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Academic Results -->
+    <h5 class="text-primary mb-3"><i class="fas fa-chart-line me-2"></i>Academic Performance</h5>
+
+    {% if term_results %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th>SUBJECT</th>
+                    <th>C.A (30)</th>
+                    <th>EXAM (70)</th>
+                    <th>TOTAL</th>
+                    <th>GRADE</th>
+                    <th>POSITION</th>
+                    <th>REMARK</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in term_results %}
+                <tr>
+                    <td><strong>{{ result.subject.name }}</strong></td>
+                    <td class="text-center">{{ result.ca_score or 0 }}</td>
+                    <td class="text-center">{{ result.exam_score or 0 }}</td>
+                    <td class="text-center"><strong>{{ result.total_score or 0 }}</strong></td>
+                    <td class="text-center">
+                        <span class="badge-grade grade-{{ result.grade }}">{{ result.grade or 'N/A' }}</span>
+                    </td>
+                    <td class="text-center">{{ result.subject_position or 'N/A' }}</td>
+                    <td class="text-center">{{ result.remark or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <table class="table table-bordered">
+                <tr>
+                    <td><strong>Total Obtainable:</strong></td>
+                    <td>{{ total_obtainable }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Total Score:</strong></td>
+                    <td>{{ total_score }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Student Average:</strong></td>
+                    <td><span class="badge bg-primary">{{ "%.2f"|format(student_avg) }}%</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Grade:</strong></td>
+                    <td><span class="badge-grade grade-{{ grade }}">{{ grade }}</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Remark:</strong></td>
+                    <td>{{ remark }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <table class="table table-bordered">
+              <tr>
+    <td><strong>Total Obtainable:</strong></td>
+    <td>{{ total_obtainable }}</td>
+    <td><strong>Class Average:</strong></td>
+    <td>{{ "%.2f"|format(class_average) if class_average else 'N/A' }}</td>
+</tr>
+<tr>
+    <td><strong>Total Score:</strong></td>
+    <td>{{ total_score }}</td>
+    <td><strong>Class Position:</strong></td>
+    <td>{{ class_position }}{{ '' if class_position else 'N/A' }}</td>
+</tr>
+<tr>
+    <td><strong>Student Average:</strong></td>
+    <td>{{ "%.2f"|format(student_avg) }}%</td>
+    <td><strong>Year Position:</strong></td>
+    <td>{{ year_position }}{{ '' if year_position else 'N/A' }}</td>
+</tr>
+<tr>
+    <td><strong>Grade:</strong></td>
+    <td>{{ grade }}</td>
+    <td><strong>Grade Point:</strong></td>
+    <td>{{ point }}</td>
+</tr>
+<tr>
+    <td><strong>Remark:</strong></td>
+    <td colspan="3">{{ remark }}</td>
+</tr>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-2"></i>No results found for this term.
+    </div>
+    {% endif %}
+
+    <!-- Grade Legend -->
+    <div class="mt-4">
+        <h6 class="text-muted"><i class="fas fa-info-circle me-2"></i>Grade Legend</h6>
+        <div class="row">
+            {% for grade, details in grading_system.items() %}
+            <div class="col-md-3 mb-2">
+                <span class="badge-grade grade-{{ grade }}">{{ grade }}</span>
+                <small>({{ details.min }}-{{ details.max }}): {{ details.remark }} [{{ details.point }} pts]</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Psychomotor Skills -->
+    {% if psychomotor %}
+    <div class="mt-4">
+        <h5 class="text-primary"><i class="fas fa-running me-2"></i>Psychomotor Skills</h5>
+        <table class="table table-bordered psychomotor-table">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Skill</th>
+                    <th>5 - Excellent</th>
+                    <th>4 - Good</th>
+                    <th>3 - Fair</th>
+                    <th>2 - Poor</th>
+                    <th>1 - Very Poor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Handwriting</strong></td>
+                    <td>{% if psychomotor.handwriting == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handwriting == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handwriting == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handwriting == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handwriting == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Verbal Fluency</strong></td>
+                    <td>{% if psychomotor.verbal_fluency == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.verbal_fluency == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.verbal_fluency == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.verbal_fluency == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.verbal_fluency == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Sports</strong></td>
+                    <td>{% if psychomotor.sports == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.sports == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.sports == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.sports == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.sports == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Handling Tools</strong></td>
+                    <td>{% if psychomotor.handling_tools == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handling_tools == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handling_tools == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handling_tools == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.handling_tools == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Drawing & Painting</strong></td>
+                    <td>{% if psychomotor.drawing_painting == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.drawing_painting == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.drawing_painting == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.drawing_painting == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.drawing_painting == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Musical Skills</strong></td>
+                    <td>{% if psychomotor.musical_skills == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.musical_skills == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.musical_skills == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.musical_skills == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if psychomotor.musical_skills == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-muted"><small>SCALE: 5 - Excellent; 4 – Good; 3 – Fair; 2 – Poor; 1 - Very Poor</small></p>
+    </div>
+    {% endif %}
+
+    <!-- Affective Disposition -->
+    {% if affective %}
+    <div class="mt-4">
+        <h5 class="text-primary"><i class="fas fa-heart me-2"></i>Affective Disposition</h5>
+        <table class="table table-bordered affective-table">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Trait</th>
+                    <th>5 - Excellent</th>
+                    <th>4 - Good</th>
+                    <th>3 - Fair</th>
+                    <th>2 - Poor</th>
+                    <th>1 - Very Poor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Punctuality</strong></td>
+                    <td>{% if affective.punctuality == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.punctuality == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.punctuality == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.punctuality == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.punctuality == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Neatness</strong></td>
+                    <td>{% if affective.neatness == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.neatness == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.neatness == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.neatness == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.neatness == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Politeness</strong></td>
+                    <td>{% if affective.politeness == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.politeness == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.politeness == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.politeness == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.politeness == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Attitude to School Work</strong></td>
+                    <td>{% if affective.attitude_to_work == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attitude_to_work == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attitude_to_work == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attitude_to_work == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attitude_to_work == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Attentiveness</strong></td>
+                    <td>{% if affective.attentiveness == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attentiveness == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attentiveness == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attentiveness == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.attentiveness == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+                <tr>
+                    <td><strong>Speaking/Handwriting</strong></td>
+                    <td>{% if affective.speaking_handwriting == 5 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.speaking_handwriting == 4 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.speaking_handwriting == 3 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.speaking_handwriting == 2 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                    <td>{% if affective.speaking_handwriting == 1 %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Achievement Box -->
+    {% if comments and comments.achievement_box %}
+    <div class="mt-4">
+        <h5 class="text-primary"><i class="fas fa-trophy me-2"></i>Achievement Box</h5>
+        <div class="alert alert-success">
+            {{ comments.achievement_box }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h5 class="text-primary"><i class="fas fa-comment me-2"></i>Class Teacher's Comment</h5>
+            <div class="border p-3 rounded" style="min-height: 100px;">
+                {{ comments.class_teacher_comment or 'No comment yet.' }}
+            </div>
+            <p class="text-muted mt-2">
+                {% if comments and comments.teacher_signed_at %}
+                <small>Signed: {{ comments.teacher_signed_at.strftime('%d/%m/%Y') }}</small>
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-6">
+            <h5 class="text-primary"><i class="fas fa-comment-dots me-2"></i>Principal's Comment</h5>
+            <div class="border p-3 rounded" style="min-height: 100px;">
+                {{ comments.principal_comment or 'No comment yet.' }}
+            </div>
+            <p class="text-muted mt-2">
+                {% if comments and comments.principal_signed_at %}
+                <small>Signed: {{ comments.principal_signed_at.strftime('%d/%m/%Y') }}</small>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer text-center text-muted">
+        <p class="mb-0">Secondary School - Excellence in Education</p>
+        <small>This is a computer-generated report card. Any alteration renders it invalid.</small>
+    </div>
+</div>
+{% endblock %}

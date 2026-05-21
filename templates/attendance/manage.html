@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-calendar-check me-2 text-primary"></i>Attendance Management</h2>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-filter me-2"></i>Select Class and Term
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row">
+            <div class="col-md-4">
+                <label class="form-label">Class <span class="text-danger">*</span></label>
+                <select name="class_id" class="form-select" required>
+                    <option value="">Select Class</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {% if class_id|string == class.id|string %}selected{% endif %}>{{ class.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Session <span class="text-danger">*</span></label>
+                <select name="session_id" class="form-select" required>
+                    <option value="">Select Session</option>
+                    {% for sess in sessions %}
+                    <option value="{{ sess.id }}" {% if session_id|string == sess.id|string %}selected{% endif %}>{{ sess.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Term <span class="text-danger">*</span></label>
+                <select name="term_id" class="form-select" required>
+                    <option value="">Select Term</option>
+                    {% for term in terms %}
+                    <option value="{{ term.id }}" {% if term_id|string == term.id|string %}selected{% endif %}>{{ term.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Load
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if students %}
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-edit me-2"></i>Update Attendance
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('attendance_manage') }}">
+            <input type="hidden" name="class_id" value="{{ class_id }}">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            <input type="hidden" name="term_id" value="{{ term_id }}">
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>S/N</th>
+                            <th>Admission No</th>
+                            <th>Student Name</th>
+                            <th>School Opened</th>
+                            <th>Times Present</th>
+                            <th>Times Absent</th>
+                            <th>Times Late</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><span class="badge bg-primary">{{ student.admission_number }}</span></td>
+                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td><input type="number" name="school_opened_{{ student.id }}" class="form-control" min="0" value="0"></td>
+                            <td><input type="number" name="present_{{ student.id }}" class="form-control" min="0" value="0"></td>
+                            <td><input type="number" name="absent_{{ student.id }}" class="form-control" min="0" value="0"></td>
+                            <td><input type="number" name="late_{{ student.id }}" class="form-control" min="0" value="0"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Save Attendance
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

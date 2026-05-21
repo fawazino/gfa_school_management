@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} - Profile{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-id-card me-2 text-primary"></i>Student Profile</h2>
+    <div>
+        <a href="{{ url_for('student_edit', student_id=student.id) }}" class="btn btn-warning">
+            <i class="fas fa-edit me-2"></i>Edit
+        </a>
+        <a href="{{ url_for('students_list') }}" class="btn btn-secondary ms-2">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Personal Information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-user me-2"></i>Personal Information
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h4 class="mt-2">{{ student.first_name }} {{ student.last_name }}</h4>
+                    <span class="badge bg-primary">{{ student.admission_number }}</span>
+                </div>
+
+                <table class="table table-sm">
+                    <tr><td><strong>Class:</strong></td><td>{{ student.student_class.name if student.student_class else 'N/A' }}</td></tr>
+                    <tr><td><strong>Sex:</strong></td><td>{{ student.sex or 'N/A' }}</td></tr>
+                    <tr><td><strong>Date of Birth:</strong></td><td>{{ student.date_of_birth.strftime('%d/%m/%Y') if student.date_of_birth else 'N/A' }}</td></tr>
+                    <tr><td><strong>State:</strong></td><td>{{ student.state_of_origin or 'N/A' }}</td></tr>
+                    <tr><td><strong>L.G.A:</strong></td><td>{{ student.local_government or 'N/A' }}</td></tr>
+                    <tr><td><strong>Religion:</strong></td><td>{{ student.religion or 'N/A' }}</td></tr>
+                    <tr><td><strong>Status:</strong></td><td><span class="badge bg-{{ 'success' if student.status == 'active' else 'warning' if student.status == 'suspended' else 'danger' }}">{{ student.status.title() }}</span></td></tr>
+                    <tr><td><strong>Date Admitted:</strong></td><td>{{ student.date_admitted.strftime('%d/%m/%Y') if student.date_admitted else 'N/A' }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-address-book me-2"></i>Contact Information
+            </div>
+            <div class="card-body">
+                <p><strong><i class="fas fa-map-marker-alt me-2"></i>Address:</strong><br>{{ student.address or 'N/A' }}</p>
+                <p><strong><i class="fas fa-phone me-2"></i>Phone:</strong> {{ student.phone or 'N/A' }}</p>
+                <p><strong><i class="fas fa-envelope me-2"></i>Email:</strong> {{ student.email or 'N/A' }}</p>
+            </div>
+        </div>
+
+        <!-- Parent Info -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-user-friends me-2"></i>Parent/Guardian
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ student.parent_name or 'N/A' }}</p>
+                <p><strong>Phone:</strong> {{ student.parent_phone or 'N/A' }}</p>
+                <p><strong>Email:</strong> {{ student.parent_email or 'N/A' }}</p>
+                <p><strong>Occupation:</strong> {{ student.parent_occupation or 'N/A' }}</p>
+                <p><strong>Address:</strong> {{ student.parent_address or 'N/A' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic & Financial -->
+    <div class="col-md-8">
+        <!-- Fee Summary -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-money-bill-wave me-2"></i>Fee Summary
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h4 class="text-success">₦{{ "{:,.2f}".format(total_paid|float) }}</h4>
+                        <small class="text-muted">Total Paid</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h4 class="text-danger">₦{{ "{:,.2f}".format(total_due|float) }}</h4>
+                        <small class="text-muted">Total Due</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h4 class="text-{{ 'success' if (total_due - total_paid) <= 0 else 'danger' }}">
+                            ₦{{ "{:,.2f}".format((total_due - total_paid)|float) }}
+                        </h4>
+                        <small class="text-muted">Balance</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic History -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-chart-line me-2"></i>Academic History
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Session</th>
+                                <th>Term</th>
+                                <th>Subject</th>
+                                <th>C.A</th>
+                                <th>Exam</th>
+                                <th>Total</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in term_results %}
+                            <tr>
+                                <td>{{ result.session.name if result.session else 'N/A' }}</td>
+                                <td>{{ result.term.name if result.term else 'N/A' }}</td>
+                                <td>{{ result.subject.name if result.subject else 'N/A' }}</td>
+                                <td>{{ result.ca_score or 0 }}</td>
+                                <td>{{ result.exam_score or 0 }}</td>
+                                <td><strong>{{ result.total_score or 0 }}</strong></td>
+                                <td><span class="badge-grade grade-{{ result.grade }}">{{ result.grade or 'N/A' }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7" class="text-center text-muted py-3">No academic records found</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fee Payment History -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-history me-2"></i>Payment History
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount Paid</th>
+                                <th>Method</th>
+                                <th>Reference</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in fee_payments %}
+                            <tr>
+                                <td>{{ payment.payment_date.strftime('%d/%m/%Y') if payment.payment_date else 'N/A' }}</td>
+                                <td>₦{{ "{:,.2f}".format(payment.amount_paid|float) }}</td>
+                                <td>{{ payment.payment_method or 'N/A' }}</td>
+                                <td>{{ payment.transaction_reference or 'N/A' }}</td>
+                                <td>{{ payment.remarks or 'N/A' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">No payment records found</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

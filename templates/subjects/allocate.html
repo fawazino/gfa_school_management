@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Allocate Subject - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tasks me-2 text-primary"></i>Allocate Subject to Class</h2>
+    <a href="{{ url_for('subjects_list') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-plus-circle me-2"></i>Subject Allocation
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('subject_allocate') }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Class <span class="text-danger">*</span></label>
+                    <select name="class_id" class="form-select" required>
+                        <option value="">Select Class</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}">{{ class.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Subject <span class="text-danger">*</span></label>
+                    <select name="subject_id" class="form-select" required>
+                        <option value="">Select Subject</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Teacher</label>
+                    <select name="teacher_id" class="form-select">
+                        <option value="">Select Teacher</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.first_name }} {{ teacher.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Session <span class="text-danger">*</span></label>
+                    <select name="session_id" class="form-select" required>
+                        <option value="">Select Session</option>
+                        {% for sess in sessions %}
+                        <option value="{{ sess.id }}">{{ sess.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="form-check">
+                    <input type="checkbox" name="is_compulsory" class="form-check-input" checked>
+                    <label class="form-check-label">Compulsory Subject</label>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Allocate Subject
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

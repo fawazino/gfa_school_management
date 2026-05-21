@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Register Staff{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user-plus me-2 text-primary"></i>Register New Staff</h2>
+    <a href="{{ url_for('staff_list') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back</a>
+</div>
+<div class="card">
+    <div class="card-header bg-primary text-white">Staff Registration Form</div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('staff_register') }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3">Personal Information</h5>
+                    <div class="mb-3"><label>Staff ID *</label><input type="text" name="staff_id" class="form-control" placeholder="STF001" required></div>
+                    <div class="mb-3"><label>First Name *</label><input type="text" name="first_name" class="form-control" required></div>
+                    <div class="mb-3"><label>Last Name *</label><input type="text" name="last_name" class="form-control" required></div>
+                    <div class="mb-3"><label>Other Names</label><input type="text" name="other_names" class="form-control"></div>
+                    <div class="mb-3"><label>Sex</label><select name="sex" class="form-select"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                    <div class="mb-3"><label>Date of Birth</label><input type="date" name="date_of_birth" class="form-control"></div>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3">Professional Information</h5>
+                    <div class="mb-3"><label>Department</label><select name="department_id" class="form-select"><option value="">Select</option>{% for dept in departments %}<option value="{{ dept.id }}">{{ dept.name }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label>Designation</label><select name="designation" class="form-select"><option value="">Select</option><option value="Principal">Principal</option><option value="Vice Principal">Vice Principal</option><option value="Teacher">Teacher</option><option value="Bursar">Bursar</option><option value="Administrator">Administrator</option></select></div>
+                    <div class="mb-3"><label>Qualification</label><input type="text" name="qualification" class="form-control" placeholder="B.Sc, M.Ed"></div>
+                    <div class="mb-3"><label>Phone</label><input type="tel" name="phone" class="form-control"></div>
+                    <div class="mb-3"><label>Email</label><input type="email" name="email" class="form-control"></div>
+                    <div class="mb-3"><label>Address</label><textarea name="address" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label>Date Employed</label><input type="date" name="date_employed" class="form-control"></div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Register Staff</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

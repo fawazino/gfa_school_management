@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GFA School Management System{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a5276;
+            --secondary-color: #2874a6;
+            --accent-color: #f39c12;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --light-bg: #f8f9fa;
+            --dark-bg: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: var(--dark-bg);
+            color: white;
+            padding-top: 20px;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            border-radius: 0;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            width: 25px;
+            text-align: center;
+            margin-right: 10px;
+        }
+
+        .main-content {
+            padding: 25px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card {
+            background: white;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-card.success { border-left-color: var(--success-color); }
+        .stat-card.warning { border-left-color: var(--warning-color); }
+        .stat-card.danger { border-left-color: var(--danger-color); }
+        .stat-card.info { border-left-color: var(--info-color); }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border: none;
+        }
+
+        .badge-grade {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .grade-A1 { background: #d5f5e3; color: #27ae60; }
+        .grade-B2 { background: #d6eaf8; color: #2874a6; }
+        .grade-B3 { background: #d6eaf8; color: #2874a6; }
+        .grade-C4 { background: #fef9e7; color: #f39c12; }
+        .grade-C5 { background: #fef9e7; color: #f39c12; }
+        .grade-C6 { background: #fef9e7; color: #f39c12; }
+        .grade-D7 { background: #fadbd8; color: #e74c3c; }
+        .grade-E8 { background: #fadbd8; color: #e74c3c; }
+        .grade-F9 { background: #fadbd8; color: #c0392b; }
+
+        .report-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .report-header {
+            text-align: center;
+            border-bottom: 3px double var(--primary-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .report-header h2 {
+            color: var(--primary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .student-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            min-width: 120px;
+        }
+
+        .psychomotor-table td,
+        .affective-table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .rating-5 { color: #27ae60; font-weight: bold; }
+        .rating-4 { color: #2874a6; font-weight: bold; }
+        .rating-3 { color: #f39c12; font-weight: bold; }
+        .rating-2 { color: #e67e22; font-weight: bold; }
+        .rating-1 { color: #e74c3c; font-weight: bold; }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        @media print {
+            .sidebar, .navbar, .no-print { display: none !important; }
+            .main-content { margin: 0; padding: 0; }
+            .report-card { box-shadow: none; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-school me-2"></i> School Management
+            </a>
+            <div class="d-flex align-items-center text-white">
+                <span class="me-3"><i class="fas fa-user-circle me-1"></i>{{ current_user.username }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 sidebar no-print">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i>Dashboard
+                        </a>
+                    </li>
+
+                    <li class="nav-item mt-3">
+                        <small class="text-muted ms-3">STUDENTS</small>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['students_list', 'student_register', 'student_profile', 'student_edit'] %}active{% endif %}" href="{{ url_for('students_list') }}">
+                            <i class="fas fa-user-graduate"></i>Students
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'student_register' %}active{% endif %}" href="{{ url_for('student_register') }}">
+                            <i class="fas fa-user-plus"></i>Register Student
+                        </a>
+                    </li>
+
+                    <li class="nav-item mt-3">
+                        <small class="text-muted ms-3">ACADEMICS</small>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['result_entry', 'results_view'] %}active{% endif %}" href="{{ url_for('result_entry') }}">
+                            <i class="fas fa-edit"></i>Result Entry
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'results_view' %}active{% endif %}" href="{{ url_for('results_view') }}">
+                            <i class="fas fa-chart-bar"></i>View Results
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['psychomotor_assessment', 'affective_assessment'] %}active{% endif %}" href="{{ url_for('psychomotor_assessment') }}">
+                            <i class="fas fa-brain"></i>Assessments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'attendance_manage' %}active{% endif %}" href="{{ url_for('attendance_manage') }}">
+                            <i class="fas fa-calendar-check"></i>Attendance
+                        </a>
+                    </li>
+
+                    <li class="nav-item mt-3">
+                        <small class="text-muted ms-3">SUBJECTS</small>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['subjects_list', 'subject_allocate'] %}active{% endif %}" href="{{ url_for('subjects_list') }}">
+                            <i class="fas fa-book"></i>Subjects
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'subject_allocate' %}active{% endif %}" href="{{ url_for('subject_allocate') }}">
+                            <i class="fas fa-tasks"></i>Allocate Subjects
+                        </a>
+                    </li>
+
+                    <li class="nav-item mt-3">
+                        <small class="text-muted ms-3">FINANCE</small>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['fees_list', 'fee_setup', 'fee_payment'] %}active{% endif %}" href="{{ url_for('fees_list') }}">
+                            <i class="fas fa-money-bill-wave"></i>School Fees
+                        </a>
+                    </li>
+
+                    <li class="nav-item mt-3">
+    <small class="text-muted ms-3">SESSIONS</small>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if request.endpoint in ['sessions_list', 'session_create'] %}active{% endif %}" href="{{ url_for('sessions_list') }}">
+        <i class="fas fa-calendar-alt"></i>Sessions
+    </a>
+</li>
+
+<li class="nav-item mt-3">
+    <small class="text-muted ms-3">STAFF</small>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if request.endpoint in ['staff_list', 'staff_register'] %}active{% endif %}" href="{{ url_for('staff_list') }}">
+        <i class="fas fa-chalkboard-teacher"></i>Staff
+    </a>
+</li>
+
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item mt-3">
+                        <small class="text-muted ms-3">ADMINISTRATION</small>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['users_list', 'user_create'] %}active{% endif %}" href="{{ url_for('users_list') }}">
+                            <i class="fas fa-users-cog"></i>Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}">
+                            <i class="fas fa-cog"></i>Settings
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="col-md-10 main-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

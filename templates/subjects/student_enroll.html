@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Student Subject Enrollment - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user-check me-2 text-primary"></i>Student Subject Enrollment</h2>
+    <a href="{{ url_for('subjects_list') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-clipboard-list me-2"></i>Enroll Student in Subjects
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('student_subject_enroll') }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Student <span class="text-danger">*</span></label>
+                    <select name="student_id" class="form-select" required>
+                        <option value="">Select Student</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.admission_number }} - {{ student.first_name }} {{ student.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Session <span class="text-danger">*</span></label>
+                    <select name="session_id" class="form-select" required>
+                        <option value="">Select Session</option>
+                        {% for sess in sessions %}
+                        <option value="{{ sess.id }}">{{ sess.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Enroll Student
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

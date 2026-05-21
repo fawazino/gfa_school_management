@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Result Entry - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-edit me-2 text-primary"></i>Result Entry</h2>
+    <a href="{{ url_for('results_view') }}" class="btn btn-secondary">
+        <i class="fas fa-eye me-2"></i>View Results
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-keyboard me-2"></i>Enter Student Results
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('result_entry') }}" id="resultForm">
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <label class="form-label">Class <span class="text-danger">*</span></label>
+                    <select name="class_id" class="form-select" id="class_select" required>
+                        <option value="">Select Class</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}">{{ class.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Subject <span class="text-danger">*</span></label>
+                    <select name="subject_id" class="form-select" id="subject_select" required>
+                        <option value="">Select Subject</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Session <span class="text-danger">*</span></label>
+                    <select name="session_id" class="form-select" required>
+                        <option value="">Select Session</option>
+                        {% for sess in sessions %}
+                        <option value="{{ sess.id }}">{{ sess.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Term <span class="text-danger">*</span></label>
+                    <select name="term_id" class="form-select" required>
+                        <option value="">Select Term</option>
+                        {% for term in terms %}
+                        <option value="{{ term.id }}">{{ term.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Grading System:</strong> C.A = 30 marks, Exam = 70 marks. Total = 100 marks.
+                <br>Grade Legend: A1(90-100), B2(80-89), B3(70-79), C4(60-69), C5(55-59), C6(50-54), D7(45-49), E8(40-44), F9(0-39)
+            </div>
+
+            <div id="students_container">
+                <p class="text-muted text-center py-4">Please select a class to load students</p>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="display: none;">
+                    <i class="fas fa-save me-2"></i>Save Results
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('class_select').addEventListener('change', function() {
+        var classId = this.value;
+        if (!classId) {
+            document.getElementById('students_container').innerHTML = 
+                '<p class="text-muted text-center py-4">Please select a class to load students</p>';
+            document.getElementById('submitBtn').style.display = 'none';
+            return;
+        }
+
+        // Fetch students for this class
+        fetch('/api/students?class_id=' + classId)
+            .then(response => response.json())
+            .then(students => {
+                if (students.length === 0) {
+                    document.getElementById('students_container').innerHTML = 
+                        '<p class="text-muted text-center py-4">No active students in this class</p>';
+                    document.getElementById('submitBtn').style.display = 'none';
+                    return;
+                }
+
+                var html = '<div class="table-responsive"><table class="table table-hover">';
+                html += '<thead><tr>';
+                html += '<th>S/N</th>';
+                html += '<th>Admission No</th>';
+                html += '<th>Student Name</th>';
+                html += '<th>C.A Score (Max: 30)</th>';
+                html += '<th>Exam Score (Max: 70)</th>';
+                html += '<th>Total</th>';
+                html += '</tr></thead><tbody>';
+
+                students.forEach(function(student, index) {
+                    html += '<tr>';
+                    html += '<td>' + (index + 1) + '</td>';
+                    html += '<td><span class="badge bg-primary">' + student.admission_number + '</span></td>';
+                    html += '<td>' + student.name + '</td>';
+                    html += '<td><input type="number" name="ca_' + student.id + '" class="form-control ca-score" min="0" max="30" required onchange="calculateTotal(this)"></td>';
+                    html += '<td><input type="number" name="exam_' + student.id + '" class="form-control exam-score" min="0" max="70" required onchange="calculateTotal(this)"></td>';
+                    html += '<td><span class="badge bg-secondary total-badge">-</span></td>';
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+                document.getElementById('students_container').innerHTML = html;
+                document.getElementById('submitBtn').style.display = 'inline-block';
+            });
+    });
+
+    function calculateTotal(input) {
+        var row = input.closest('tr');
+        var caInput = row.querySelector('.ca-score');
+        var examInput = row.querySelector('.exam-score');
+        var totalBadge = row.querySelector('.total-badge');
+
+        var ca = parseInt(caInput.value) || 0;
+        var exam = parseInt(examInput.value) || 0;
+        var total = ca + exam;
+
+        totalBadge.textContent = total;
+
+        // Color code based on grade
+        if (total >= 75) {
+            totalBadge.className = 'badge grade-A1 total-badge';
+        } else if (total >= 70) {
+            totalBadge.className = 'badge grade-B2 total-badge';
+        } else if (total >= 65) {
+            totalBadge.className = 'badge grade-B3 total-badge';
+        } else if (total >= 60) {
+            totalBadge.className = 'badge grade-C4 total-badge';
+        } else if (total >= 55) {
+            totalBadge.className = 'badge grade-C5 total-badge';
+        } else if (total >= 50) {
+            totalBadge.className = 'badge grade-C6 total-badge';
+        } else if (total >= 45) {
+            totalBadge.className = 'badge grade-D7 total-badge';
+        } else if (total >= 40) {
+            totalBadge.className = 'badge grade-E8 total-badge';
+        } else {
+            totalBadge.className = 'badge grade-F9 total-badge';
+        }
+    }
+</script>
+{% endblock %}

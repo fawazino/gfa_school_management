@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - GFA School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-cog me-2 text-primary"></i>System Settings</h2>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-school me-2"></i>School Configuration
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('settings') }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3">School Information</h5>
+                    <div class="mb-3">
+                        <label class="form-label">School Name</label>
+                        <input type="text" name="school_name" class="form-control" value="{{ setting.school_name }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea name="school_address" class="form-control" rows="2">{{ setting.school_address or '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="school_phone" class="form-control" value="{{ setting.school_phone or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="school_email" class="form-control" value="{{ setting.school_email or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">School Motto</label>
+                        <textarea name="school_motto" class="form-control" rows="2">{{ setting.school_motto or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3">Academic Settings</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Current Session</label>
+                        <select name="current_session" class="form-select">
+                            <option value="">Select Session</option>
+                            {% for sess in sessions %}
+                            <option value="{{ sess.name }}" {% if setting.current_session == sess.name %}selected{% endif %}>{{ sess.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Term</label>
+                        <select name="current_term" class="form-select">
+                            <option value="">Select Term</option>
+                            {% for term in terms %}
+                            <option value="{{ term.id }}" {% if setting.current_term == term.id %}selected{% endif %}>{{ term.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">C.A Maximum Score</label>
+                        <input type="number" name="ca_max_score" class="form-control" value="{{ setting.ca_max_score }}" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Exam Maximum Score</label>
+                        <input type="number" name="exam_max_score" class="form-control" value="{{ setting.exam_max_score }}" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pass Mark</label>
+                        <input type="number" name="pass_mark" class="form-control" value="{{ setting.pass_mark }}" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
