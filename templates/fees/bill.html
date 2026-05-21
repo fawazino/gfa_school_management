@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header text-center">
+            <h3>{{ setting.school_name }}</h3>
+            <p><em>{{ setting.school_motto }}</em></p>
+            <h4>SCHOOL BILL</h4>
+            <a href="{{ url_for('print_bill', student_id=student.id, session_id=current_session.id, term_id=current_term.id) }}" 
+   target="_blank"
+   class="btn btn-info btn-sm">
+   <i class="fas fa-print me-1"></i> Print Bill
+</a>
+        </div>
+        
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p><strong>Name:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Class:</strong> {{ student.student_class.name }}</p>
+                </div>
+            </div>
+            
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Amount (₦)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fee in fees %}
+                    <tr>
+                        <td>{{ fee.fee_type }}</td>
+                        <td>₦{{ "%.2f"|format(fee.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="table-primary">
+                        <td><strong>TOTAL</strong></td>
+                        <td><strong>₦{{ "%.2f"|format(total) }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="mt-4">
+                <p><strong>Date:</strong> {{ date }}</p>
+                <p><strong>Received By:</strong> _______________________</p>
+            </div>
+            
+            <button onclick="window.print()" class="btn btn-primary">Print Bill</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

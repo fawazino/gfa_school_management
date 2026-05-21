@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Bill - {{ student.first_name }} {{ student.last_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .bill-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Header Section */
+        .bill-header {
+            text-align: center;
+            border-bottom: 3px solid #1a5276;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .school-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+        
+        .school-logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background: #1a5276;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 50%;
+        }
+        
+        .school-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1a5276;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .school-motto {
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .bill-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #c0392b;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        /* Student Info */
+        .student-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .info-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #1a5276;
+            min-width: 100px;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+        
+        /* Fee Table */
+        .fee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        
+        .fee-table thead {
+            background: #1a5276;
+            color: white;
+        }
+        
+        .fee-table th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+        
+        .fee-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .fee-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .fee-table tbody tr:hover {
+            background: #e8f4f8;
+        }
+        
+        .fee-table .amount {
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .fee-table .total-row {
+            background: #d5e8d4 !important;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .fee-table .total-row td {
+            border-top: 2px solid #1a5276;
+            border-bottom: 2px solid #1a5276;
+        }
+        
+        /* Footer */
+        .bill-footer {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .signature-box {
+            margin-top: 30px;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .date-box {
+            margin-top: 10px;
+        }
+        
+        /* Print Button */
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1a5276;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+        
+        .print-btn:hover {
+            background: #154a63;
+        }
+        
+        .print-btn i {
+            margin-right: 8px;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .bill-container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .print-btn {
+                display: none !important;
+            }
+            
+            .fee-table tbody tr {
+                background: white !important;
+            }
+            
+            .fee-table .total-row {
+                background: #f0f0f0 !important;
+            }
+        }
+        
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">
+        <i class="fas fa-print"></i> Print Bill
+    </button>
+    
+    <div class="bill-container">
+        <!-- Header with Logo -->
+        <div class="bill-header">
+            <div class="logo-section">
+                {% if logo_exists %}
+                <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                     alt="School Logo" 
+                     class="school-logo"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="school-logo-placeholder" style="display: none;">
+                    {{ school_name[0] if school_name else 'S' }}
+                </div>
+                {% else %}
+                <div class="school-logo-placeholder">
+                    {{ school_name[0] if school_name else 'S' }}
+                </div>
+                {% endif %}
+                <div>
+                    <div class="school-name">{{ school_name }}</div>
+                    {% if school_motto %}
+                    <div class="school-motto">"{{ school_motto }}"</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="bill-title">School Bill</div>
+        </div>
+        
+        <!-- Student Information -->
+        <div class="student-info">
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{ student.first_name }} {{ student.last_name }} {{ student.other_names or '' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Class:</span>
+                <span class="info-value">{{ student.student_class.name if student.student_class else 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Admission No:</span>
+                <span class="info-value">{{ student.admission_number }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Session:</span>
+                <span class="info-value">{{ session.name if session else 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Term:</span>
+                <span class="info-value">{{ term.name if term else 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date:</span>
+                <span class="info-value">{{ date }}</span>
+            </div>
+        </div>
+        
+        <!-- Fee Items -->
+        <table class="fee-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">S/N</th>
+                    <th>Item / Description</th>
+                    <th style="width: 150px; text-align: right;">Amount (₦)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fee in fees %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ fee.fee_type }}</td>
+                    <td class="amount">₦{{ "%.2f"|format(fee.amount) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #999; padding: 30px;">
+                        No fee items found for this term.
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if fees %}
+                <tr class="total-row">
+                    <td></td>
+                    <td style="text-align: right;">TOTAL AMOUNT DUE:</td>
+                    <td class="amount">₦{{ "%.2f"|format(total) }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <!-- Footer -->
+        <div class="bill-footer">
+            <div class="date-box">
+                <p><strong>Date Issued:</strong> {{ date }}</p>
+                <p style="margin-top: 10px; color: #666; font-size: 12px;">
+                    This bill is generated electronically and is valid without signature.
+                </p>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line" style="text-align: center;">
+                    Bursar / Accountant Signature & Stamp
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

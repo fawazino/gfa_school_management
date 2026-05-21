@@ -1713,6 +1713,26 @@ def report_card_pdf(student_id):
         mimetype='application/pdf'
     )
 
+@app.route('/fees/bill/<int:student_id>')
+@login_required
+def fee_bill(student_id):
+    student = Student.query.get_or_404(student_id)
+    session_id = request.args.get('session_id')
+    term_id = request.args.get('term_id')
+    
+    fees = SchoolFee.query.filter_by(
+        class_id=student.class_id,
+        session_id=session_id,
+        term_id=term_id
+    ).all()
+    
+    total = sum(float(f.amount) for f in fees)
+    
+    return render_template('fees/bill.html', 
+                         student=student, 
+                         fees=fees, 
+                         total=total,
+                         date=date.today())
 # ============================================================
 # ROUTES - SUBJECT ALLOCATION
 # ============================================================
@@ -2273,6 +2293,6 @@ def init_db():
 with app.app_context():
     db.create_all()
     init_db()
-    
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
