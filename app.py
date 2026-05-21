@@ -26,7 +26,7 @@ from reportlab.pdfgen import canvas
 app = Flask(__name__)
 app.jinja_env.globals['now'] = datetime.now
 app.config['SECRET_KEY'] = 'gfa-school-management-secret-key-2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gfa_school.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///gfa_school.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
@@ -34,7 +34,7 @@ db = SQLAlchemy(app)
 
 with app.app_context():
     db.create_all()
-    
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
