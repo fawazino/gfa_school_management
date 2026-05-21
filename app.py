@@ -32,10 +32,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 db = SQLAlchemy(app)
-
-with app.app_context():
-    db.create_all()
-
+    
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -2273,6 +2270,9 @@ def init_db():
         db.session.commit()
         print("Database initialized successfully!")
 
-if __name__ == '__main__':
+with app.app_context():
+    db.create_all()
     init_db()
+    
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
