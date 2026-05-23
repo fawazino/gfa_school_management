@@ -18,7 +18,11 @@
 <div class="report-card">
     <!-- Report Header -->
     <div class="report-header">
-        <h2>Secondary School</h2>
+          <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                 alt="School Logo" 
+                 height="80" 
+                 class="me-2 rounded">
+        <h2>GFA Secondary School</h2>
         <p class="text-muted mb-0">JSS & SSS Academic Report</p>
         <p class="text-muted">{{ session.name }} - {{ term.name }}</p>
     </div>
@@ -356,7 +360,7 @@
 
     <!-- Footer -->
     <div class="footer text-center text-muted">
-        <p class="mb-0">Secondary School - Excellence in Education</p>
+        <p class="mb-0">GFA Secondary School - Excellence in Education</p>
         <small>This is a computer-generated report card. Any alteration renders it invalid.</small>
     </div>
 </div>

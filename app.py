@@ -26,10 +26,17 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.jinja_env.globals['now'] = datetime.now
-app.config['SECRET_KEY'] = 'gfa-school-management-secret-key-2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'gfa_school.db')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    basedir = os.path.abspath(os.path.dirname(__file__))    
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'gfa_school.db')
+    app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 db = SQLAlchemy(app)
     
@@ -633,21 +640,62 @@ def student_profile(student_id):
         FeePayment.payment_date.desc()
     ).all()
 
-    # Calculate fee balance
+    # ============================================================
+    # CALCULATE FEE BALANCE (Fixed)
+    # ============================================================
+    
+    # Total paid by this student
     total_paid = db.session.query(db.func.sum(FeePayment.amount_paid)).filter_by(
         student_id=student_id
     ).scalar() or 0
 
-    total_due = db.session.query(db.func.sum(SchoolFee.amount)).join(
-        FeePayment, FeePayment.fee_id == SchoolFee.id
-    ).filter(FeePayment.student_id == student_id).scalar() or 0
+    # Get current session and term from settings
+    setting = Setting.query.first()
+    current_session_id = None
+    current_term_id = None
+    
+    if setting and setting.current_session:
+        current_session = Session.query.filter_by(name=setting.current_session).first()
+        if current_session:
+            current_session_id = current_session.id
+            current_term_id = setting.current_term
+    
+    # Fallback: use latest session if no current set
+    if not current_session_id:
+        latest_session = Session.query.order_by(Session.id.desc()).first()
+        if latest_session:
+            current_session_id = latest_session.id
+            current_term_id = 1
+    
+    # Calculate total due from fee structure for this student's class
+    total_due = db.session.query(db.func.sum(SchoolFee.amount)).filter_by(
+        class_id=student.class_id,
+        session_id=current_session_id,
+        term_id=current_term_id
+    ).scalar() or 0
+    
+    # If no fees for current session/term, try just session
+    if total_due == 0:
+        total_due = db.session.query(db.func.sum(SchoolFee.amount)).filter_by(
+            class_id=student.class_id,
+            session_id=current_session_id
+        ).scalar() or 0
+    
+    # If still 0, get all fees for this class
+    if total_due == 0:
+        total_due = db.session.query(db.func.sum(SchoolFee.amount)).filter_by(
+            class_id=student.class_id
+        ).scalar() or 0
+
+    balance = float(total_due) - float(total_paid)
 
     return render_template('students/profile.html', 
                          student=student, 
                          term_results=term_results,
                          fee_payments=fee_payments,
                          total_paid=total_paid,
-                         total_due=total_due)
+                         total_due=total_due,
+                         balance=balance)
 
 @app.route('/students/<int:student_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -1253,6 +1301,7 @@ def report_card(student_id):
                          grading_system=GRADING_SYSTEM,
                          psychomotor_scale=PSYCHOMOTOR_SCALE)
 
+
 @app.route('/report-card/pdf/<int:student_id>')
 @login_required
 def report_card_pdf(student_id):
@@ -1264,46 +1313,46 @@ def report_card_pdf(student_id):
         flash('Please select session and term.', 'warning')
         return redirect(url_for('report_card', student_id=student_id))
 
-    # Get term results
+    # Get all data
     term_results = TermResult.query.filter_by(
         student_id=student_id,
         session_id=session_id,
         term_id=term_id
     ).all()
 
-    # Get attendance
     attendance = Attendance.query.filter_by(
         student_id=student_id,
         session_id=session_id,
         term_id=term_id
     ).first()
 
-    # Get psychomotor
     psychomotor = PsychomotorAssessment.query.filter_by(
         student_id=student_id,
         session_id=session_id,
         term_id=term_id
     ).first()
 
-    # Get affective
     affective = AffectiveAssessment.query.filter_by(
         student_id=student_id,
         session_id=session_id,
         term_id=term_id
     ).first()
 
-    # Get comments
     comments = ResultComment.query.filter_by(
         student_id=student_id,
         session_id=session_id,
         term_id=term_id
     ).first()
 
-    # Get school settings
+    # Get settings
     setting = Setting.query.first()
-    school_name = setting.school_name if setting else 'SECONDARY SCHOOL'
+    school_name = setting.school_name if setting else 'GFA SECONDARY SCHOOL'
+    school_motto = setting.school_motto if setting else ''
+    school_address = setting.school_address if setting else ''
+    school_phone = setting.school_phone if setting else ''
+    school_email = setting.school_email if setting else ''
 
-    # Calculate student stats
+    # Calculate stats
     if term_results:
         total_score = sum(r.total_score for r in term_results)
         total_obtainable = len(term_results) * 100
@@ -1317,7 +1366,7 @@ def report_card_pdf(student_id):
         point = 0
         remark = 'N/A'
 
-    # Calculate class statistics
+    # Calculate class stats
     class_id = student.class_id
     class_student_ids = db.session.query(TermResult.student_id).filter_by(
         class_id=class_id,
@@ -1349,42 +1398,42 @@ def report_card_pdf(student_id):
     if class_averages:
         all_avgs = [ca['avg'] for ca in class_averages]
         class_average = sum(all_avgs) / len(all_avgs)
+        class_highest = max(all_avgs)
+        class_lowest = min(all_avgs)
     else:
-        class_average = 0
+        class_average = class_highest = class_lowest = 0
 
     session = Session.query.get(session_id)
     term = Term.query.get(term_id)
 
-    # Generate PDF using ReportLab
+    # Generate PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1.5*cm, bottomMargin=1.5*cm)
     elements = []
     styles = getSampleStyleSheet()
 
-    # ============================================================
-    # STYLES
-    # ============================================================
-    header_style = ParagraphStyle(
+    # Styles
+    title_style = ParagraphStyle(
         'CustomHeader',
         parent=styles['Heading1'],
         fontSize=18,
         textColor=colors.HexColor('#1a5276'),
-        alignment=1,  # Center
+        alignment=1,
         spaceAfter=6,
         fontName='Helvetica-Bold'
     )
 
-    subheader_style = ParagraphStyle(
+    subtitle_style = ParagraphStyle(
         'CustomSubHeader',
         parent=styles['Heading2'],
-        fontSize=12,
+        fontSize=11,
         textColor=colors.HexColor('#1a5276'),
         alignment=1,
         spaceAfter=12
     )
 
-    title_style = ParagraphStyle(
-        'TitleStyle',
+    header_style = ParagraphStyle(
+        'TableHeader',
         parent=styles['Normal'],
         fontSize=10,
         fontName='Helvetica-Bold',
@@ -1392,41 +1441,109 @@ def report_card_pdf(student_id):
     )
 
     normal_style = ParagraphStyle(
-        'NormalStyle',
+        'TableNormal',
         parent=styles['Normal'],
         fontSize=9,
         textColor=colors.black
     )
 
     # ============================================================
-    # HEADER
+    # WATERMARK FUNCTION
     # ============================================================
-    elements.append(Paragraph(school_name.upper(), header_style))
-    elements.append(Paragraph("Student Academic Report Card", subheader_style))
-    if setting and setting.school_motto:
-        elements.append(Paragraph(f"<i>{setting.school_motto}</i>", 
-                                  ParagraphStyle('Motto', parent=normal_style, alignment=1, fontSize=8)))
-    elements.append(Spacer(1, 0.2*inch))
+    logo_path = os.path.join(app.root_path, 'static', 'images', 'logo.png')
+    logo_exists = os.path.exists(logo_path)
+
+    def add_watermark(canvas, doc):
+        canvas.saveState()
+        
+        # Faint logo watermark in background
+        if logo_exists:
+            try:
+                from reportlab.lib.utils import ImageReader
+                img = ImageReader(logo_path)
+                
+                # Center position, large and very faint
+                logo_size = 280
+                x = (A4[0] - logo_size) / 2
+                y = (A4[1] - logo_size) / 2
+                
+                canvas.saveState()
+                canvas.setFillAlpha(0.06)  # 6% opacity - very subtle
+                canvas.drawImage(img, x, y, width=logo_size, height=logo_size, mask='auto')
+                canvas.restoreState()
+            except Exception:
+                pass
+        
+        # Diagonal text watermark as fallback/backup
+        canvas.saveState()
+        canvas.setFont('Helvetica-Bold', 50)
+        canvas.setFillColor(colors.HexColor('#e0e0e0'))
+        canvas.setFillAlpha(0.12)
+        canvas.translate(A4[0]/2, A4[1]/2)
+        canvas.rotate(35)
+        canvas.drawCentredString(0, 0, school_name[:15].upper())
+        canvas.restoreState()
+        
+        canvas.restoreState()
 
     # ============================================================
-    # STUDENT INFO TABLE
+    # HEADER WITH LOGO
+    # ============================================================
+    
+    if logo_exists:
+        try:
+            # Header table with logo + school info
+            from reportlab.lib.utils import ImageReader
+            logo_img = Image(logo_path, width=55, height=55)
+            
+            header_data = [
+                [logo_img, 
+                 Paragraph(f'<b><font size="16" color="#1a5276">{school_name.upper()}</font></b><br/><font size="8" color="#666">{school_address}</font><br/><font size="8" color="#666">Phone: {school_phone} | Email: {school_email}</font><br/><font size="9" color="#c0392b"><b>STUDENT REPORT CARD</b></font>', 
+                          ParagraphStyle('ReportHeader', parent=normal_style, alignment=1, leading=14))]
+            ]
+            header_table = Table(header_data, colWidths=[1*inch, 5.5*inch])
+            header_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                ('LEFTPADDING', (0, 0), (0, 0), 0),
+                ('RIGHTPADDING', (0, 0), (0, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ]))
+            elements.append(header_table)
+        except Exception:
+            # Fallback to text-only header
+            elements.append(Paragraph(school_name.upper(), title_style))
+            if school_motto:
+                elements.append(Paragraph(f"<i>{school_motto}</i>", subtitle_style))
+            elements.append(Paragraph("Student Report Card", subtitle_style))
+    else:
+        # No logo - text only header
+        elements.append(Paragraph(school_name.upper(), title_style))
+        if school_motto:
+            elements.append(Paragraph(f"<i>{school_motto}</i>", subtitle_style))
+        elements.append(Paragraph("Student Report Card", subtitle_style))
+    
+    elements.append(Spacer(1, 0.15*inch))
+
+    # ============================================================
+    # STUDENT INFO
     # ============================================================
     student_data = [
-        [Paragraph('<b>Name:</b>', title_style), 
+        [Paragraph('<b>Name:</b>', header_style), 
          Paragraph(f"{student.first_name} {student.last_name} {student.other_names or ''}", normal_style),
-         Paragraph('<b>Admission No:</b>', title_style), 
+         Paragraph('<b>Admission No:</b>', header_style), 
          Paragraph(student.admission_number, normal_style)],
-        [Paragraph('<b>Class:</b>', title_style), 
+        [Paragraph('<b>Class:</b>', header_style), 
          Paragraph(student.student_class.name if student.student_class else 'N/A', normal_style),
-         Paragraph('<b>Sex:</b>', title_style), 
+         Paragraph('<b>Sex:</b>', header_style), 
          Paragraph(student.sex or 'N/A', normal_style)],
-        [Paragraph('<b>Session:</b>', title_style), 
+        [Paragraph('<b>Session:</b>', header_style),
          Paragraph(session.name if session else 'N/A', normal_style),
-         Paragraph('<b>Term:</b>', title_style), 
-         Paragraph(term.name if term else 'N/A', normal_style)],
+         Paragraph('<b>Term:</b>', header_style),
+         Paragraph(term.name if term else 'N/A', normal_style)]
     ]
 
-    student_table = Table(student_data, colWidths=[1.3*inch, 2.2*inch, 1.3*inch, 2.2*inch])
+    student_table = Table(student_data, colWidths=[1.2*inch, 2.2*inch, 1.2*inch, 2.2*inch])
     student_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#eaf2f8')),
         ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#eaf2f8')),
@@ -1437,14 +1554,14 @@ def report_card_pdf(student_id):
         ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
     elements.append(student_table)
     elements.append(Spacer(1, 0.2*inch))
 
     # ============================================================
-    # ACADEMIC RESULTS TABLE
+    # ACADEMIC RESULTS
     # ============================================================
     if term_results:
         results_data = [['Subject', 'C.A (30)', 'Exam (70)', 'Total', 'Grade', 'Position', 'Remark']]
@@ -1459,31 +1576,16 @@ def report_card_pdf(student_id):
                 result.remark or 'N/A'
             ])
 
-        # Add summary row
-        results_data.append([
-            Paragraph('<b>TOTAL / AVERAGE</b>', title_style),
-            '', '',
-            Paragraph(f'<b>{total_score}</b>', title_style),
-            Paragraph(f'<b>{grade}</b>', title_style),
-            '',
-            Paragraph(f'<b>{remark}</b>', title_style)
-        ])
-
         results_table = Table(results_data, repeatRows=1)
         results_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a5276')),
-            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#d5e8d4')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('TEXTCOLOR', (0, -1), (-1, -1), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('ALIGN', (0, 0), (0, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-            ('TOPPADDING', (0, -1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, -1), (-1, -1), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#eaf2f8')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
@@ -1491,17 +1593,17 @@ def report_card_pdf(student_id):
         elements.append(Spacer(1, 0.2*inch))
 
     # ============================================================
-    # SUMMARY STATISTICS TABLE
+    # SUMMARY STATISTICS
     # ============================================================
     summary_data = [
-        [Paragraph('<b>Total Obtainable:</b>', title_style), str(total_obtainable),
-         Paragraph('<b>Class Average:</b>', title_style), f"{class_average:.2f}%" if class_average else 'N/A'],
-        [Paragraph('<b>Total Score:</b>', title_style), str(total_score),
-         Paragraph('<b>Class Position:</b>', title_style), f"{class_position}{'' if class_position else ''}" if class_position else 'N/A'],
-        [Paragraph('<b>Student Average:</b>', title_style), f"{student_avg:.2f}%",
-         Paragraph('<b>Grade Point:</b>', title_style), str(point)],
-        [Paragraph('<b>Grade:</b>', title_style), grade,
-         Paragraph('<b>Remark:</b>', title_style), remark],
+        [Paragraph('<b>Total Obtainable:</b>', header_style), str(total_obtainable),
+         Paragraph('<b>Class Average:</b>', header_style), f"{class_average:.2f}%" if class_average else 'N/A'],
+        [Paragraph('<b>Total Score:</b>', header_style), str(total_score),
+         Paragraph('<b>Class Position:</b>', header_style), f"{class_position}{'th' if class_position else ''}" if class_position else 'N/A'],
+        [Paragraph('<b>Student Average:</b>', header_style), f"{student_avg:.2f}%",
+         Paragraph('<b>Grade Point:</b>', header_style), str(point)],
+        [Paragraph('<b>Grade:</b>', header_style), grade,
+         Paragraph('<b>Remark:</b>', header_style), remark],
     ]
 
     summary_table = Table(summary_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
@@ -1522,17 +1624,18 @@ def report_card_pdf(student_id):
     elements.append(Spacer(1, 0.2*inch))
 
     # ============================================================
-    # PSYCHOMOTOR & AFFECTIVE ASSESSMENTS
+    # PSYCHOMOTOR & AFFECTIVE
     # ============================================================
     if psychomotor or affective:
         elements.append(Paragraph("<b>PSYCHOMOTOR & AFFECTIVE ASSESSMENT</b>", 
-                                ParagraphStyle('SectionHeader', parent=title_style, 
+                                ParagraphStyle('SectionHeader', parent=header_style, 
                                               textColor=colors.HexColor('#1a5276'), 
                                               fontSize=11, spaceAfter=6)))
 
-        # Psychomotor
+        # Build assessment table
+        assess_data = [['Skill/Trait', 'Rating (1-5)', 'Remark']]
+        
         if psychomotor:
-            psycho_data = [['Psychomotor Skills', 'Rating', 'Remarks']]
             psycho_items = [
                 ('Handwriting', psychomotor.handwriting),
                 ('Verbal Fluency', psychomotor.verbal_fluency),
@@ -1542,11 +1645,9 @@ def report_card_pdf(student_id):
                 ('Musical Skills', psychomotor.musical_skills),
             ]
             for skill, rating in psycho_items:
-                psycho_data.append([skill, str(rating or 'N/A'), PSYCHOMOTOR_SCALE.get(rating, 'N/A')])
+                assess_data.append([skill, str(rating or 'N/A'), PSYCHOMOTOR_SCALE.get(rating, 'N/A')])
 
-        # Affective
         if affective:
-            affect_data = [['Affective Disposition', 'Rating', 'Remarks']]
             affect_items = [
                 ('Punctuality', affective.punctuality),
                 ('Neatness', affective.neatness),
@@ -1556,23 +1657,9 @@ def report_card_pdf(student_id):
                 ('Speaking/Handwriting', affective.speaking_handwriting),
             ]
             for trait, rating in affect_items:
-                affect_data.append([trait, str(rating or 'N/A'), PSYCHOMOTOR_SCALE.get(rating, 'N/A')])
+                assess_data.append([trait, str(rating or 'N/A'), PSYCHOMOTOR_SCALE.get(rating, 'N/A')])
 
-        # Combine side by side if both exist
-        if psychomotor and affective:
-            max_rows = max(len(psycho_data), len(affect_data))
-            combined = []
-            for i in range(max_rows):
-                p_row = psycho_data[i] if i < len(psycho_data) else ['', '', '']
-                a_row = affect_data[i] if i < len(affect_data) else ['', '', '']
-                combined.append(p_row + a_row)
-            
-            assess_table = Table(combined, colWidths=[1.5*inch, 0.8*inch, 1.2*inch, 1.5*inch, 0.8*inch, 1.2*inch])
-        elif psychomotor:
-            assess_table = Table(psycho_data, colWidths=[2*inch, 1*inch, 2*inch])
-        else:
-            assess_table = Table(affect_data, colWidths=[2*inch, 1*inch, 2*inch])
-
+        assess_table = Table(assess_data, colWidths=[2.5*inch, 1.5*inch, 2.5*inch])
         assess_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a5276')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -1592,7 +1679,7 @@ def report_card_pdf(student_id):
     # ============================================================
     if attendance:
         elements.append(Paragraph("<b>ATTENDANCE RECORD</b>", 
-                                ParagraphStyle('SectionHeader2', parent=title_style, 
+                                ParagraphStyle('SectionHeader2', parent=header_style, 
                                               textColor=colors.HexColor('#1a5276'), 
                                               fontSize=11, spaceAfter=6)))
         
@@ -1612,6 +1699,8 @@ def report_card_pdf(student_id):
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 9),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
         ]))
         elements.append(att_table)
         elements.append(Spacer(1, 0.2*inch))
@@ -1619,26 +1708,26 @@ def report_card_pdf(student_id):
     # ============================================================
     # COMMENTS
     # ============================================================
-    if comments:
+    if comments and (comments.class_teacher_comment or comments.principal_comment or comments.achievement_box):
         elements.append(Paragraph("<b>REMARKS & COMMENTS</b>", 
-                                ParagraphStyle('SectionHeader3', parent=title_style, 
+                                ParagraphStyle('SectionHeader3', parent=header_style, 
                                               textColor=colors.HexColor('#1a5276'), 
                                               fontSize=11, spaceAfter=6)))
         
         comment_data = []
         if comments.class_teacher_comment:
             comment_data.append([
-                Paragraph('<b>Class Teacher\'s Comment:</b>', title_style),
+                Paragraph('<b>Class Teacher\'s Comment:</b>', header_style),
                 Paragraph(comments.class_teacher_comment, normal_style)
             ])
         if comments.principal_comment:
             comment_data.append([
-                Paragraph('<b>Principal\'s Comment:</b>', title_style),
+                Paragraph('<b>Principal\'s Comment:</b>', header_style),
                 Paragraph(comments.principal_comment, normal_style)
             ])
         if comments.achievement_box:
             comment_data.append([
-                Paragraph('<b>Special Achievement:</b>', title_style),
+                Paragraph('<b>Special Achievement:</b>', header_style),
                 Paragraph(comments.achievement_box, normal_style)
             ])
         
@@ -1662,7 +1751,7 @@ def report_card_pdf(student_id):
     # GRADE LEGEND
     # ============================================================
     elements.append(Paragraph("<b>GRADE LEGEND</b>", 
-                            ParagraphStyle('SectionHeader4', parent=title_style, 
+                            ParagraphStyle('SectionHeader4', parent=header_style, 
                                           textColor=colors.HexColor('#1a5276'), 
                                           fontSize=11, spaceAfter=6)))
     
@@ -1683,27 +1772,32 @@ def report_card_pdf(student_id):
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 9),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('TOPPADDING', (0, 1), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
     ]))
     elements.append(legend_table)
 
     # ============================================================
-    # FOOTER / SIGNATURES
+    # SIGNATURES
     # ============================================================
     elements.append(Spacer(1, 0.3*inch))
     sig_data = [
         ['_______________________', '_______________________', '_______________________'],
-        ['Class Teacher', 'Principal', 'Date'],
+        [f'Class Teacher\n({comments.class_teacher_comment[:20] + "..." if comments and comments.class_teacher_comment else "N/A"})', 
+         'Principal', 
+         'Date'],
     ]
     sig_table = Table(sig_data, colWidths=[2*inch, 2*inch, 2*inch])
     sig_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('TOPPADDING', (0, 0), (-1, 0), 30),
     ]))
     elements.append(sig_table)
 
-    # Build PDF
-    doc.build(elements)
+    # Build PDF with watermark on every page
+    doc.build(elements, onFirstPage=add_watermark, onLaterPages=add_watermark)
     buffer.seek(0)
 
     return send_file(
@@ -1712,6 +1806,54 @@ def report_card_pdf(student_id):
         download_name=f"report_card_{student.admission_number}.pdf",
         mimetype='application/pdf'
     )
+
+import os
+
+@app.route('/fees/print-bill/<int:student_id>')
+@login_required
+def print_bill(student_id):
+    student = Student.query.get_or_404(student_id)
+    session_id = request.args.get('session_id', type=int)
+    term_id = request.args.get('term_id', type=int)
+    
+    # Get current session/term if not provided
+    if not session_id or not term_id:
+        setting = Setting.query.first()
+        if setting:
+            session_id = session_id or Session.query.filter_by(name=setting.current_session).first().id if setting.current_session else None
+            term_id = term_id or setting.current_term
+    
+    # Get fees for this student/class/session/term
+    fees = SchoolFee.query.filter_by(
+        class_id=student.class_id,
+        session_id=session_id,
+        term_id=term_id
+    ).all()
+    
+    total = sum(float(f.amount) for f in fees) if fees else 0
+    
+    # Get settings
+    setting = Setting.query.first()
+    school_name = setting.school_name if setting else 'School Name'
+    school_motto = setting.school_motto if setting else ''
+    
+    # Check if logo exists
+    logo_path = os.path.join(app.root_path, 'static', 'images', 'logo.png')
+    logo_exists = os.path.exists(logo_path)
+    
+    session = Session.query.get(session_id) if session_id else None
+    term = Term.query.get(term_id) if term_id else None
+    
+    return render_template('fees/print_bill.html',
+                         student=student,
+                         fees=fees,
+                         total=total,
+                         school_name=school_name,
+                         school_motto=school_motto,
+                         logo_exists=logo_exists,
+                         session=session,
+                         term=term,
+                         date=date.today().strftime('%B %d, %Y'))
 
 @app.route('/fees/bill/<int:student_id>')
 @login_required
@@ -1733,6 +1875,8 @@ def fee_bill(student_id):
                          fees=fees, 
                          total=total,
                          date=date.today())
+
+
 # ============================================================
 # ROUTES - SUBJECT ALLOCATION
 # ============================================================
