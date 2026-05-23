@@ -31,7 +31,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    database_url = database_url.replace('postgres://', 'postgresql+pg8000://', 1)
+    database_url = database_url.replace('postgresql://', 'postgresql+pg8000://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     basedir = os.path.abspath(os.path.dirname(__file__))    
